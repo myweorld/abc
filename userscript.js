@@ -5,7 +5,7 @@
 // @author       Adapted for Agar.live Protocol 4
 // @match        *://agar.live/*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js
-// @updateURL    https://myweorld.github.io/abc
+// @updateURL    https://myweorld.github.io/abc/userscript.js
 // @run-at       document-start
 // @grant        none
 // ==/UserScript==
