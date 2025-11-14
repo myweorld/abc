@@ -35,15 +35,15 @@
     function injectCSS() {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        // Change this URL to your CDN or localhost for testing
-        link.href = 'https://YOUR_CDN_URL/assets/endymion.css?61d39546479e749e0e9d';
+        // jsDelivr CDN - automatically serves from GitHub
+        link.href = 'https://cdn.jsdelivr.net/gh/myweorld/abc@main/docs/assets/endymion.css?61d39546479e749e0e9d';
         document.head.appendChild(link);
     }
 
     function injectScript() {
         const script = document.createElement('script');
-        // Change this URL to your CDN or localhost for testing
-        script.src = 'https://YOUR_CDN_URL/AgarLive.pack.js?61d39546479e749e0e9d';
+        // jsDelivr CDN - automatically serves from GitHub
+        script.src = 'https://cdn.jsdelivr.net/gh/myweorld/abc@main/docs/AgarLive.pack.js?61d39546479e749e0e9d';
 
         script.onload = () => {
             console.log('[Agar.live Spectate] Main script loaded!');
