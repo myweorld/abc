@@ -14,6 +14,29 @@
 // Features: Fullmap, Visual Effects, Multibox, Complete UI
 // Bot integration: Removed (will be re-added in future)
 
+// Block all Agar.live scripts from loading
+let scriptBlocker = null;
+
+function blockAgarLiveScripts() {
+    scriptBlocker = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.tagName === 'SCRIPT' && !node.src.includes('myweorld.github.io') && !node.src.includes('jquery')) {
+                    node.remove();
+                    console.log('[HSLO] Blocked Agar.live script:', node.src || 'inline');
+                }
+            });
+        });
+    });
+
+    if (document.documentElement) {
+        scriptBlocker.observe(document.documentElement, { childList: true, subtree: true });
+    }
+}
+
+// Start blocking immediately
+blockAgarLiveScripts();
+
 const HSLO = new class {
     constructor() {
         this.method = 'GET';
@@ -23,9 +46,14 @@ const HSLO = new class {
     }
 
     load() {
-        window.stop(); // Stop Agar.live from loading its own scripts
-        this.setMessage();
-        this.fetch();
+        // Stop Agar.live page loading
+        window.stop();
+
+        // Clear the page immediately
+        setTimeout(() => {
+            this.setMessage();
+            this.fetch();
+        }, 10);
     }
 
     setMessage() {
@@ -71,6 +99,15 @@ const HSLO = new class {
         request.open(this.method, this.URL + "?date=" + this.date, true);
         request.onload = () => {
             this.HTML = request.responseText;
+
+            // Verify HTML was fetched successfully
+            if (!this.HTML || this.HTML.length < 100) {
+                console.error('[HSLO] Failed to fetch HTML - empty or invalid response');
+                this.showError('Invalid HTML response from server');
+                return;
+            }
+
+            console.log('[HSLO] HTML fetched successfully, length:', this.HTML.length);
             this.write();
         };
         request.onerror = () => {
@@ -99,7 +136,37 @@ const HSLO = new class {
         request.send();
     }
 
+    showError(message) {
+        document.open();
+        document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>HSLO Endymion - Error</title>
+            </head>
+            <body style="margin: 0; padding: 0;">
+                <div style='width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; background: #111; color: #fff; font-family: "Ubuntu", sans-serif; flex-direction: column;'>
+                    <h1 style='font-size: 48px; color: #f44336; margin: 0;'>⚠ Error</h1>
+                    <p style='font-size: 24px; color: #888; margin-top: 20px;'>${message}</p>
+                    <p style='font-size: 18px; color: #666; margin-top: 10px;'>Check console for details</p>
+                    <button onclick='location.reload()' style='margin-top: 30px; padding: 15px 40px; font-size: 18px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 5px; cursor: pointer; transition: transform 0.2s;' onmouseover='this.style.transform="scale(1.05)"' onmouseout='this.style.transform="scale(1)"'>
+                        🔄 Retry
+                    </button>
+                </div>
+            </body>
+            </html>
+        `);
+        document.close();
+    }
+
     write() {
+        // Stop blocking scripts - allow HSLO scripts to load
+        if (scriptBlocker) {
+            scriptBlocker.disconnect();
+            console.log('[HSLO] Script blocker disabled - loading HSLO Endymion');
+        }
+
         document.open();
         document.write(this.HTML);
         document.close();
