@@ -167,9 +167,70 @@ const HSLO = new class {
             console.log('[HSLO] Script blocker disabled - loading HSLO Endymion');
         }
 
+        // Parse HTML and extract script/link tags
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(this.HTML, 'text/html');
+
+        // Replace the entire document
         document.open();
-        document.write(this.HTML);
+        document.write('<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>');
         document.close();
+
+        // Copy all elements from parsed HTML
+        const headElements = Array.from(doc.head.children);
+        const bodyElements = Array.from(doc.body.children);
+
+        console.log('[HSLO] Injecting', headElements.length, 'head elements and', bodyElements.length, 'body elements');
+
+        // Inject head elements (except scripts and styles - we'll handle those separately)
+        headElements.forEach(el => {
+            if (el.tagName !== 'SCRIPT' && el.tagName !== 'LINK') {
+                document.head.appendChild(el.cloneNode(true));
+            } else if (el.tagName === 'LINK' && el.rel === 'stylesheet') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = el.href;
+                document.head.appendChild(link);
+                console.log('[HSLO] Injected stylesheet:', link.href);
+            }
+        });
+
+        // Inject body elements
+        bodyElements.forEach(el => {
+            document.body.appendChild(el.cloneNode(true));
+        });
+
+        // Now inject scripts dynamically (to bypass document.write blocking)
+        const scripts = Array.from(doc.querySelectorAll('script'));
+
+        function loadScriptSequentially(index) {
+            if (index >= scripts.length) {
+                console.log('[HSLO] All scripts loaded successfully');
+                return;
+            }
+
+            const originalScript = scripts[index];
+            const script = document.createElement('script');
+
+            if (originalScript.src) {
+                script.src = originalScript.src;
+                script.onload = () => {
+                    console.log('[HSLO] Loaded script:', script.src);
+                    loadScriptSequentially(index + 1);
+                };
+                script.onerror = () => {
+                    console.error('[HSLO] Failed to load script:', script.src);
+                    loadScriptSequentially(index + 1);
+                };
+            } else {
+                script.textContent = originalScript.textContent;
+                setTimeout(() => loadScriptSequentially(index + 1), 0);
+            }
+
+            document.body.appendChild(script);
+        }
+
+        loadScriptSequentially(0);
     }
 }
 HSLO.load();
