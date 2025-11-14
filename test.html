@@ -11,7 +11,7 @@
 </head>
 <body>
     <canvas id="screen" width="1920" height="1080"></canvas>
-    
+
     <div style="position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 10px; z-index: 9999;">
         <h2>🎮 Endymion Agar.live</h2>
         <div>Status: <span id="status">Ready</span></div>
@@ -24,7 +24,32 @@
         window.AGARLIVE_SERVER = "ffa3.agar.live";
         console.log('[Agar.live] Mode enabled:', window.AGARLIVE_SERVER);
     </script>
-    
+
     <script src="https://myweorld.github.io/abc/Endymion.pack.js"></script>
+
+    <script>
+        // Wait for Endymion to load
+        setTimeout(() => {
+            const status = document.getElementById('status');
+            if (window.protocol48Handler) {
+                status.textContent = 'Handler loaded ✅';
+                status.style.color = '#0f0';
+            } else {
+                status.textContent = 'ERROR: Handler not found';
+                status.style.color = '#f00';
+            }
+        }, 1000);
+
+        // Play button
+        document.getElementById('play').onclick = function() {
+            const nick = document.getElementById('nick').value;
+            if (window.protocol48Handler && window.protocol48Handler.isConnected) {
+                window.protocol48Handler.spawn(nick);
+                console.log('[Test] Spawning as:', nick);
+            } else {
+                console.log('[Test] Handler not ready. Waiting for connection...');
+            }
+        };
+    </script>
 </body>
 </html>
