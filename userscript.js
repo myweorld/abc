@@ -14,28 +14,59 @@
 // Features: Fullmap, Visual Effects, Multibox, Complete UI
 // Bot integration: Removed (will be re-added in future)
 
-// Block all Agar.live scripts from loading
-let scriptBlocker = null;
+// AGGRESSIVE: Override script loading at prototype level
+(function() {
+    const originalCreateElement = document.createElement;
+    document.createElement = function(tagName) {
+        const element = originalCreateElement.call(document, tagName);
 
-function blockAgarLiveScripts() {
-    scriptBlocker = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-                if (node.tagName === 'SCRIPT' && !node.src.includes('myweorld.github.io') && !node.src.includes('jquery')) {
-                    node.remove();
-                    console.log('[HSLO] Blocked Agar.live script:', node.src || 'inline');
+        if (tagName.toLowerCase() === 'script') {
+            const originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+            const originalTextContent = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+
+            // Block src setting for non-HSLO scripts
+            Object.defineProperty(element, 'src', {
+                get: function() {
+                    return originalSrcDescriptor.get.call(this);
+                },
+                set: function(value) {
+                    // Block Agar.live scripts, allow HSLO and jQuery
+                    if (value && !value.includes('myweorld.github.io') && !value.includes('jquery') && !value.includes('googleapis')) {
+                        console.log('[HSLO] BLOCKED external script:', value);
+                        return; // Don't set src
+                    }
+                    originalSrcDescriptor.set.call(this, value);
                 }
             });
-        });
-    });
 
-    if (document.documentElement) {
-        scriptBlocker.observe(document.documentElement, { childList: true, subtree: true });
-    }
-}
+            // Block inline scripts (textContent)
+            Object.defineProperty(element, 'textContent', {
+                get: function() {
+                    return originalTextContent.get.call(this);
+                },
+                set: function(value) {
+                    // Only allow if it's clearly HSLO code or empty
+                    if (value && value.trim() && !value.includes('HSLO') && !value.includes('myweorld')) {
+                        console.log('[HSLO] BLOCKED inline script');
+                        return; // Don't set textContent
+                    }
+                    originalTextContent.set.call(this, value);
+                }
+            });
+        }
 
-// Start blocking immediately
-blockAgarLiveScripts();
+        return element;
+    };
+
+    // Mock grecaptcha to prevent errors
+    window.grecaptcha = {
+        ready: function(cb) { if (cb) setTimeout(cb, 0); },
+        execute: function() { return Promise.resolve('mock-token'); },
+        render: function() { return 0; }
+    };
+
+    console.log('[HSLO] Script blocker and mocks initialized');
+})();
 
 const HSLO = new class {
     constructor() {
@@ -161,11 +192,7 @@ const HSLO = new class {
     }
 
     write() {
-        // Stop blocking scripts - allow HSLO scripts to load
-        if (scriptBlocker) {
-            scriptBlocker.disconnect();
-            console.log('[HSLO] Script blocker disabled - loading HSLO Endymion');
-        }
+        console.log('[HSLO] Loading HSLO Endymion client...');
 
         // Parse HTML and extract script/link tags
         const parser = new DOMParser();
